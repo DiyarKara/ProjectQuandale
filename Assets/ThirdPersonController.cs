@@ -11,6 +11,13 @@ public class ThirdPersonController : MonoBehaviour
     [SerializeField] private float runSpeed = 12f;
     [SerializeField] private float turnSpeed = 0.1f;
     float turnVelo;
+    [SerializeField] private bool isGrounded;
+    [SerializeField] private float groundCheckDistance;
+    [SerializeField] private LayerMask groundMask;
+    private Vector3 velocity;
+    [SerializeField] private float gravity;
+
+    [SerializeField] private float jumpHeight = 1.5f;
 
     // Update is called once per frame
     void Update()
@@ -20,9 +27,19 @@ public class ThirdPersonController : MonoBehaviour
 
     public void Move()
     {
+        isGrounded = Physics.CheckSphere(transform.position, groundCheckDistance, groundMask);
+        velocity.y += gravity * Time.deltaTime; // calculate gravity
+        controller.Move(velocity * Time.deltaTime); // apply gravity
+        if (isGrounded && velocity.y < 0) // if on ground dont apply gravity(?)
+        {
+            velocity.y = -2f;
+        }
+
+
         float horizontal = Input.GetAxisRaw("Horizontal");  //Horizontal X axis
         float vertical = Input.GetAxisRaw("Vertical"); //Vertical Z axis
         Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
+
 
         if (direction.magnitude >= 0.1f)
         {
@@ -31,23 +48,43 @@ public class ThirdPersonController : MonoBehaviour
             transform.rotation = Quaternion.Euler(0f, angle, 0f);
 
             Vector3 moveDirection = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
-            if (moveDirection != Vector3.zero && !Input.GetKey(KeyCode.LeftShift))
+            if (moveDirection != Vector3.zero && !Input.GetKey(KeyCode.LeftShift)) // walking
             {
+                print("walk");
                 controller.Move(moveDirection.normalized * walkSpeed * Time.deltaTime);
             }
-            else if (moveDirection != Vector3.zero && Input.GetKey(KeyCode.LeftShift))
+            else if (moveDirection != Vector3.zero && Input.GetKey(KeyCode.LeftShift)) // running
             {
+                print("run");
                 controller.Move(moveDirection.normalized * runSpeed * Time.deltaTime);
             }
-            else
+            else if (moveDirection == Vector3.zero) // idle
             {
-
+                print("in idle");
+                if (Input.GetKeyDown(KeyCode.Space))
+                {
+                    print("in jump");
+                    Jump();
+                }
             }
-           // controller.Move(moveDirection.normalized * walkSpeed * Time.deltaTime);
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                print("in jump");
+                if (isGrounded)
+                {
+                    Jump();
+                }
+                
+            }
         }
     }
 
-    private void OnApplicationFocus(bool focus)
+    private void Jump()
+    {
+        velocity.y = Mathf.Sqrt(jumpHeight * -2 * gravity);
+    }
+
+    private void OnApplicationFocus(bool focus) // lock the cursor middle of the view
     {
         if (focus)
         {
