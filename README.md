@@ -1,2 +1,2 @@
 # ProjectQuandale
-Supem Human Quandale
+Super Human Quandale
